@@ -10,6 +10,117 @@ use std::os::windows::process::CommandExt;
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+/// Windows 常见 CLI 安装路径扫描
+#[cfg(target_os = "windows")]
+fn scan_windows_cli_paths(cmd: &str) -> Option<PathBuf> {
+    let app_data = std::env::var("APPDATA").unwrap_or_default();
+    let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
+
+    // 常见 Windows 安装路径，按优先级排序
+    let common_paths = vec![
+        // npm 全局安装
+        PathBuf::from(&app_data).join("npm").join(format!("{}.cmd", cmd)),
+        PathBuf::from(&app_data).join("npm").join(cmd),
+        // pnpm 全局安装
+        PathBuf::from(&local_app_data).join("pnpm").join(format!("{}.cmd", cmd)),
+        PathBuf::from(&local_app_data).join("pnpm").join(cmd),
+        // Yarn 全局安装
+        PathBuf::from(&local_app_data).join("Yarn").join("bin").join(format!("{}.cmd", cmd)),
+        PathBuf::from(&local_app_data).join("Yarn").join("bin").join(cmd),
+        // bun 全局安装
+        dirs::home_dir().map(|h| h.join(".bun").join("bin").join(format!("{}.exe", cmd))).unwrap_or_default(),
+        dirs::home_dir().map(|h| h.join(".bun").join("bin").join(cmd)).unwrap_or_default(),
+    ];
+
+    for path in common_paths {
+        if path.exists() {
+            tracing::debug!("[CLI-Sync] Detected {} via Windows explicit path: {:?}", cmd, path);
+            return Some(path);
+        }
+    }
+
+    // 扫描 NVM Windows 目录
+    if let Ok(nvm_home) = std::env::var("NVM_HOME") {
+        let nvm_path = PathBuf::from(nvm_home);
+        if nvm_path.exists() {
+            // NVM Windows 结构: %NVM_HOME%\v{version}\{cmd}.cmd
+            if let Ok(entries) = fs::read_dir(&nvm_path) {
+                for entry in entries.flatten() {
+                    let cmd_path = entry.path().join(format!("{}.cmd", cmd));
+                    if cmd_path.exists() {
+                        return Some(cmd_path);
+                    }
+                    // 也检查 .exe 版本
+                    let exe_path = entry.path().join(format!("{}.exe", cmd));
+                    if exe_path.exists() {
+                        return Some(exe_path);
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// 解析 where 命令输出获取第一个有效路径
+#[cfg(target_os = "windows")]
+fn parse_where_output(output: &[u8]) -> Option<PathBuf> {
+    let stdout = String::from_utf8_lossy(output);
+    for line in stdout.lines() {
+        let trimmed = line.trim();
+        if !trimmed.is_empty() {
+            let path = PathBuf::from(trimmed);
+            if path.exists() {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+/// 检查路径是否是 .cmd/.bat 文件
+#[cfg(target_os = "windows")]
+fn is_cmd_file(path: &PathBuf) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("cmd") || e.eq_ignore_ascii_case("bat"))
+        .unwrap_or(false)
+}
+
+/// 执行版本命令（Windows 特殊处理 .cmd/.bat）
+#[cfg(target_os = "windows")]
+fn run_version_command(executable_path: &PathBuf) -> Option<String> {
+    let output = if is_cmd_file(executable_path) {
+        Command::new("cmd.exe")
+            .arg("/C")
+            .arg(executable_path)
+            .arg("--version")
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+    } else {
+        let mut cmd = Command::new(executable_path);
+        cmd.arg("--version");
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        cmd.output()
+    };
+
+    match output {
+        Ok(out) if out.status.success() => {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            // 优化：提取最末尾的数字版本号
+            let cleaned = s.split(|c: char| !c.is_numeric() && c != '.')
+                .filter(|part| !part.is_empty())
+                .last()
+                .map(|p| p.trim())
+                .unwrap_or(&s)
+                .to_string();
+            Some(cleaned)
+        }
+        _ => None,
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum CliApp {
     Claude,
@@ -120,10 +231,27 @@ pub fn check_cli_installed(app: &CliApp) -> (bool, Option<String>) {
         Command::new("which").arg(cmd).output()
     };
 
-    let mut installed = match which_output {
+    let mut installed = match &which_output {
         Ok(out) => out.status.success(),
         Err(_) => false,
     };
+
+    #[cfg(target_os = "windows")]
+    if installed {
+        if let Ok(out) = &which_output {
+            if let Some(found_path) = parse_where_output(&out.stdout) {
+                executable_path = found_path;
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    if !installed {
+        if let Some(found_path) = scan_windows_cli_paths(cmd) {
+            installed = true;
+            executable_path = found_path;
+        }
+    }
 
     // [FIX #765] macOS 增强检测: 如果 which 失败,显式搜索常用二进制路径
     // 解决 Tauri 进程 PATH 可能不完整导致检测不到已安装 CLI 的问题
@@ -169,28 +297,28 @@ pub fn check_cli_installed(app: &CliApp) -> (bool, Option<String>) {
         return (false, None);
     }
 
-    // 2. 获取版本
-    let mut ver_cmd = Command::new(&executable_path);
-    ver_cmd.arg("--version");
+    // 2. 获取版本（Windows 使用特殊处理 .cmd/.bat）
     #[cfg(target_os = "windows")]
-    ver_cmd.creation_flags(CREATE_NO_WINDOW);
+    let version = run_version_command(&executable_path);
 
-    let version_output = ver_cmd.output();
-    let version = match version_output {
-        Ok(out) if out.status.success() => {
-            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            // 优化：提取最末尾的数字版本号
-            // 例如 "claude/2.1.2 (Claude Code)" -> "2.1.2"
-            // 例如 "codex-cli 0.86.0" -> "0.86.0"
-            let cleaned = s.split(|c: char| !c.is_numeric() && c != '.')
-                .filter(|part| !part.is_empty())
-                .last()
-                .map(|p| p.trim())
-                .unwrap_or(&s)
-                .to_string();
-            Some(cleaned)
+    #[cfg(not(target_os = "windows"))]
+    let version = {
+        let mut ver_cmd = Command::new(&executable_path);
+        ver_cmd.arg("--version");
+        let version_output = ver_cmd.output();
+        match version_output {
+            Ok(out) if out.status.success() => {
+                let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                let cleaned = s.split(|c: char| !c.is_numeric() && c != '.')
+                    .filter(|part| !part.is_empty())
+                    .last()
+                    .map(|p| p.trim())
+                    .unwrap_or(&s)
+                    .to_string();
+                Some(cleaned)
+            }
+            _ => None,
         }
-        _ => None,
     };
 
     (true, version)
