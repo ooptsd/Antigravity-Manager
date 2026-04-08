@@ -1348,6 +1348,21 @@
         "placeholder_desc": "选填备注",
         "placeholder_max_ips": "0 = 不限制",
         "hint_max_ips": "0 表示不限制",
-        "hint_curfew": "留空则禁用。基于服务器时间。"
+        "hint_curfew": "留空则禁用。基于服务器时间。",
+        "allowed_models": "允许使用的模型",
+        "select_all": "全选",
+        "clear_all": "清空",
+        "models_unlimited": "留空 = 所有模型可用",
+        "models_selected": "个模型已选",
+        "custom_expires_at": "自定义过期时间",
+        "hint_custom_expires": "选择此 Token 过期的确切日期和时间",
+        "expires_custom": "自定义",
+        "copy_failed": "复制失败",
+        "load_failed": "加载失败",
+        "custom_expires_required": "请选择自定义过期时间",
+        "expires_in": "有效期",
+        "curfew_time_range": "宵禁时间段",
+        "curfew_to": "至",
+        "curfew_hint": "留空则禁用宵禁。基于服务器时间。"
     }
 }
