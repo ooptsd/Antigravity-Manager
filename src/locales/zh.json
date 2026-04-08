@@ -1330,6 +1330,7 @@
         "ip_limit": "IP 限制",
         "created": "创建时间",
         "today_requests": "今日请求数",
+        "today_tokens": "今日 Tokens",
         "never": "永不过期",
         "renew": "续期",
         "renew_button": "续费",

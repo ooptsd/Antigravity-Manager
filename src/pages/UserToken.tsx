@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, RefreshCw, Copy, Activity, User, Settings, Shield, Clock, Users, Check, Sparkles, X } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Copy, Activity, User, Settings, Shield, Clock, Users, Check, Sparkles, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { request as invoke } from '../utils/request';
 import { showToast } from '../components/common/ToastContainer';
@@ -31,6 +31,7 @@ interface UserTokenStats {
     active_tokens: number;
     total_users: number;
     today_requests: number;
+    today_tokens: number;
 }
 
 // interface CreateTokenRequest omitted as it's not explicitly used for typing variables
@@ -267,7 +268,7 @@ const UserToken: React.FC = () => {
             </div>
 
             {/* Stats Cards Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <motion.div
                     whileHover={{ y: -2 }}
                     className="bg-white dark:bg-base-100 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-base-200"
@@ -318,6 +319,21 @@ const UserToken: React.FC = () => {
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-base-content mb-0.5">{stats?.today_requests || 0}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">{t('user_token.today_requests', { defaultValue: '今日请求数' })}</div>
+                </motion.div>
+
+                <motion.div
+                    whileHover={{ y: -2 }}
+                    className="bg-white dark:bg-base-100 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-base-200"
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="p-1.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
+                            <Zap className="w-4 h-4 text-yellow-500" />
+                        </div>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-base-content mb-0.5">
+                        {stats?.today_tokens ? (stats.today_tokens / 1000).toFixed(1) + 'k' : '0'}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{t('user_token.today_tokens', { defaultValue: '今日 Tokens' })}</div>
                 </motion.div>
             </div>
 

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::modules::user_token_db::{self, UserToken, TokenIpBinding};
 use crate::modules::security_db;
+use crate::modules::token_stats;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTokenRequest {
@@ -87,6 +88,7 @@ pub struct UserTokenStats {
     pub active_tokens: usize,
     pub total_users: usize,
     pub today_requests: i64,
+    pub today_tokens: i64,
 }
 
 /// 获取简单的统计信息
@@ -104,10 +106,14 @@ pub async fn get_user_token_summary() -> Result<UserTokenStats, String> {
     // 从安全数据库获取今日请求数
     let ip_stats = security_db::get_ip_stats()?;
     
+    // 从 token_stats 获取今日 tokens (24小时)
+    let token_summary = token_stats::get_summary_stats(24)?;
+    
     Ok(UserTokenStats {
         total_tokens: tokens.len(),
         active_tokens,
         total_users: users.len(),
         today_requests: ip_stats.today_requests as i64,
+        today_tokens: token_summary.total_tokens as i64,
     })
 }

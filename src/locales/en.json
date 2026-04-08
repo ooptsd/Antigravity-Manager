@@ -1365,6 +1365,7 @@
         "ip_limit": "IP Limit",
         "created": "Created",
         "today_requests": "Today Requests",
+        "today_tokens": "Today Tokens",
         "never": "Never",
         "renew": "Renew",
         "renew_button": "Renew",
