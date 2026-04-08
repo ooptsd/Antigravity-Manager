@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::modules::user_token_db::{self, UserToken, TokenIpBinding};
+use crate::modules::security_db;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTokenRequest {
@@ -100,13 +101,13 @@ pub async fn get_user_token_summary() -> Result<UserTokenStats, String> {
         users.insert(t.username.clone());
     }
     
-    // 这里简单返回一些数据，请求数最好从数据库聚合查询
-    // 目前仅作为演示，请求数暂不精确统计今日的
+    // 从安全数据库获取今日请求数
+    let ip_stats = security_db::get_ip_stats()?;
     
     Ok(UserTokenStats {
         total_tokens: tokens.len(),
         active_tokens,
         total_users: users.len(),
-        today_requests: 0, // TODO: Implement daily stats query
+        today_requests: ip_stats.today_requests as i64,
     })
 }
