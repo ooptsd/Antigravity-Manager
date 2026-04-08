@@ -1133,6 +1133,7 @@
             "model": "模型",
             "protocol": "协议",
             "account": "账号",
+            "user": "用户",
             "path": "路径",
             "usage": "Token 消耗",
             "duration": "耗时",

@@ -1140,6 +1140,7 @@
             "model": "Model",
             "protocol": "Protocol",
             "account": "Account",
+            "user": "User",
             "path": "Path",
             "usage": "Tokens",
             "duration": "Duration",
