@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, RefreshCw, Copy, Activity, User, Settings, Shield, Clock, Users, Check, Sparkles, X, Zap } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Copy, Activity, User, Settings, Shield, Clock, Users, Check, Sparkles, X, Zap, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { request as invoke } from '../utils/request';
 import { showToast } from '../components/common/ToastContainer';
@@ -55,6 +55,10 @@ const UserToken: React.FC = () => {
     const [updating, setUpdating] = useState(false);
     const [editAllowedModels, setEditAllowedModels] = useState<string[]>([]);
 
+    // 排序状态
+    const [sortField, setSortField] = useState<'usage' | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
     // Create Form State
     const [newUsername, setNewUsername] = useState('');
     const [newDesc, setNewDesc] = useState('');
@@ -81,6 +85,28 @@ const UserToken: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // 按使用量排序切换
+    const toggleUsageSort = () => {
+        if (sortField !== 'usage') {
+            setSortField('usage');
+            setSortOrder('desc');
+        } else {
+            setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+        }
+    };
+
+    // 根据排序状态处理 tokens
+    const sortedTokens = useMemo(() => {
+        if (sortField === 'usage') {
+            return [...tokens].sort((a, b) => {
+                return sortOrder === 'desc'
+                    ? b.total_requests - a.total_requests
+                    : a.total_requests - b.total_requests;
+            });
+        }
+        return tokens;
+    }, [tokens, sortField, sortOrder]);
 
     useEffect(() => {
         loadData();
@@ -345,7 +371,17 @@ const UserToken: React.FC = () => {
                             <th className="bg-transparent text-gray-500 font-medium py-4">{t('user_token.username', { defaultValue: '用户名' })}</th>
                             <th className="bg-transparent text-gray-500 font-medium py-4">{t('user_token.token', { defaultValue: 'Token' })}</th>
                             <th className="bg-transparent text-gray-500 font-medium py-4">{t('user_token.expires', { defaultValue: '过期时间' })}</th>
-                            <th className="bg-transparent text-gray-500 font-medium py-4">{t('user_token.usage', { defaultValue: '使用量' })}</th>
+                            <th
+                                className="bg-transparent text-gray-500 font-medium py-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 select-none"
+                                onClick={toggleUsageSort}
+                            >
+                                <div className="flex items-center gap-1">
+                                    {t('user_token.usage', { defaultValue: '使用量' })}
+                                    {sortField === 'usage' && (
+                                        sortOrder === 'desc' ? <ArrowDown size={14} /> : <ArrowUp size={14} />
+                                    )}
+                                </div>
+                            </th>
                             <th className="bg-transparent text-gray-500 font-medium py-4">{t('user_token.ip_limit', { defaultValue: 'IP 限制' })}</th>
                             <th className="bg-transparent text-gray-500 font-medium py-4">{t('user_token.created', { defaultValue: '创建时间' })}</th>
                             <th className="bg-transparent text-gray-500 font-medium py-4 text-right">{t('common.actions', { defaultValue: '操作' })}</th>
@@ -353,7 +389,7 @@ const UserToken: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-base-200">
                         <AnimatePresence mode="popLayout">
-                            {tokens.map((token, index) => (
+                            {sortedTokens.map((token, index) => (
                                 <motion.tr
                                     key={token.id}
                                     initial={{ opacity: 0, x: -10 }}
