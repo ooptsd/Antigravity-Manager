@@ -548,7 +548,8 @@ pub async fn handle_chat_completions(
         let strategy = determine_retry_strategy(status_code, &error_text, false);
 
         // 3. 标记限流状态(用于 UI 显示)
-        if status_code == 429 || status_code == 529 || status_code == 503 || status_code == 500 {
+        // [FIX] Only 429 should trigger rate limiting. 529/500/503/404 are server errors, not client rate limits.
+        if status_code == 429 {
             // [FIX] Use async version with model parameter for fine-grained rate limiting
             token_manager
                 .mark_rate_limited_async(
@@ -1530,7 +1531,8 @@ pub async fn handle_completions(
         );
 
         // 3. 标记限流状态(用于 UI 显示)
-        if status_code == 429 || status_code == 529 || status_code == 503 || status_code == 500 {
+        // [FIX] Only 429 should trigger rate limiting. 529/500/503/404 are server errors, not client rate limits.
+        if status_code == 429 {
             token_manager
                 .mark_rate_limited_async(
                     &email,
