@@ -6,10 +6,66 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use bytes::Bytes;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::proxy::{ProxyAuthMode, ProxySecurityConfig};
+
+const MAX_BODY_SIZE: usize = 10 * 1024 * 1024; // 10MB
+
+/// 从请求体中提取模型名称
+/// 支持多种协议：OpenAI、Claude、Gemini（URL 路径）
+fn extract_model_from_request(request: &Request, body: &Option<Bytes>, path: &str) -> Option<String> {
+    // Gemini 模型从 URL 路径提取: /v1beta/models/:model
+    if path.contains("/v1beta/models/") {
+        return path
+            .split("/v1beta/models/")
+            .nth(1)
+            .and_then(|s| s.split('/').next())
+            .map(|s| s.to_string());
+    }
+
+    // OpenAI/Claude 等从 JSON body 中提取
+    if let Some(bytes) = body {
+        if let Ok(text) = std::str::from_utf8(bytes) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(text) {
+                return json.get("model")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+            }
+        }
+    }
+
+    None
+}
+
+/// 提前读取请求体（用于在中间件中提取模型名称进行验证）
+async fn read_request_body(request: Request) -> (Request, Option<Bytes>) {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    
+    // 只对 POST/PUT/PATCH 方法尝试读取 body
+    if method == axum::http::Method::POST 
+        || method == axum::http::Method::PUT 
+        || method == axum::http::Method::PATCH 
+    {
+        let (parts, body) = request.into_parts();
+        
+        match axum::body::to_bytes(body, MAX_BODY_SIZE).await {
+            Ok(bytes) => {
+                let request = Request::from_parts(parts, axum::body::Body::from(bytes.clone()));
+                (request, Some(bytes))
+            }
+            Err(_) => {
+                let request = Request::from_parts(parts, axum::body::Body::empty());
+                (request, None)
+            }
+        }
+    } else {
+        (request, None)
+    }
+}
 
 /// API Key 认证中间件 (代理接口使用，遵循 auth_mode)
 pub async fn auth_middleware(
@@ -36,6 +92,9 @@ async fn auth_middleware_internal(
     next: Next,
     force_strict: bool,
 ) -> Result<Response, StatusCode> {
+    // [FIX] 提前读取请求体，以便提取模型名称进行权限验证
+    let (request, request_body) = read_request_body(request).await;
+    
     let method = request.method().clone();
     let path = request.uri().path().to_string();
 
@@ -76,7 +135,39 @@ async fn auth_middleware_internal(
             
             if let Some(token) = api_key {
                 // 尝试验证是否为 User Token（不阻止请求，只记录）
+                // 提取模型名称用于验证
+                let model_name = extract_model_from_request(&request, &request_body, &path);
+                
                 if let Ok(Some(user_token)) = crate::modules::user_token_db::get_token_by_value(token) {
+                    // 如果配置了 allowed_models，进行模型权限验证
+                    if !user_token.allowed_models.is_empty() {
+                        if let Some(ref model) = model_name {
+                            if !user_token.allowed_models.contains(model) {
+                                tracing::warn!(
+                                    "UserToken '{}' attempted to access unauthorized model '{}'. Allowed: {:?}",
+                                    user_token.username, model, user_token.allowed_models
+                                );
+                                let error_body = serde_json::json!({
+                                    "error": {
+                                        "message": format!(
+                                            "Model '{}' is not allowed for this token. Allowed models: {}",
+                                            model,
+                                            user_token.allowed_models.join(", ")
+                                        ),
+                                        "type": "invalid_request_error",
+                                        "code": "model_not_allowed"
+                                    }
+                                });
+                                let response = axum::response::Response::builder()
+                                    .status(StatusCode::FORBIDDEN)
+                                    .header("Content-Type", "application/json")
+                                    .body(axum::body::Body::from(serde_json::to_string(&error_body).unwrap()))
+                                    .unwrap();
+                                return Ok(response);
+                            }
+                        }
+                    }
+                    
                     let identity = UserTokenIdentity {
                         token_id: user_token.id,
                         token: user_token.token,
@@ -171,7 +262,7 @@ async fn auth_middleware_internal(
             .headers()
             .get("x-forwarded-for")
             .and_then(|v| v.to_str().ok())
-            .map(|s| s.split(',').next().unwrap_or(s).trim().to_string())
+            .map(|s| s.split(',').first().unwrap_or(s).trim().to_string())
             .or_else(|| {
                 request
                     .headers()
@@ -181,9 +272,10 @@ async fn auth_middleware_internal(
             })
             .unwrap_or_else(|| "127.0.0.1".to_string()); // Default fallback
 
-        // 验证 Token
-        // 注意：模型验证在后续请求处理器中进行，这里暂时传递 None
-        match crate::modules::user_token_db::validate_token(token, &client_ip, None) {
+        // [FIX] 提取模型名称并传递给 validate_token
+        let model_name = extract_model_from_request(&request, &request_body, &path);
+        
+        match crate::modules::user_token_db::validate_token(token, &client_ip, model_name.as_deref()) {
             Ok((true, _)) => {
                 // Token 有效，查询信息以便传递
                 if let Ok(Some(user_token)) = crate::modules::user_token_db::get_token_by_value(token) {
