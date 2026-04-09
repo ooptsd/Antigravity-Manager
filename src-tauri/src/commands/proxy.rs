@@ -475,7 +475,6 @@ pub async fn get_proxy_logs_filtered(
         offset,
     )
 }
-}
 
 /// 生成 API Key
 #[tauri::command]
