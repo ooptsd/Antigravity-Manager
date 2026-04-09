@@ -1132,7 +1132,9 @@
             "images": "Images",
             "reset": "Reset",
             "by_account": "Filter by account",
-            "all_accounts": "All Accounts"
+            "all_accounts": "All Accounts",
+            "by_user": "Filter by user",
+            "all_users": "All Users"
         },
         "table": {
             "status": "Status",
@@ -1158,6 +1160,7 @@
             "mapped_model": "Mapped Model",
             "protocol": "Protocol",
             "account_used": "Account Used",
+            "username": "User",
             "id": "Request ID",
             "payload_empty": "No data"
         },

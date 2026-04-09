@@ -989,6 +989,7 @@
             "protocol": "Giao thức",
             "mapped_model": "Model Đã Ánh xạ",
             "account_used": "Tài khoản Sử dụng",
+            "username": "User",
             "payload_empty": "Không có Payload"
         },
         "token_stats": {

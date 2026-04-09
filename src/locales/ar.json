@@ -984,6 +984,7 @@
             "mapped_model": "النموذج المعين",
             "protocol": "البروتوكول",
             "account_used": "الحساب المستخدم",
+            "username": "User",
             "id": "معرف الطلب",
             "payload_empty": "لا توجد بيانات"
         },

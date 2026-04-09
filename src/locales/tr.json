@@ -959,6 +959,7 @@
             "protocol": "Protokol",
             "mapped_model": "Eşlenen Model",
             "account_used": "Kullanılan Hesap",
+            "username": "User",
             "payload_empty": "Yük Yok"
         },
         "dialog": {

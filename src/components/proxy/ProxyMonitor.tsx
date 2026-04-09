@@ -149,9 +149,11 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
     const [stats, setStats] = useState<ProxyStats>({ total_requests: 0, success_count: 0, error_count: 0 });
     const [filter, setFilter] = useState('');
     const [accountFilter, setAccountFilter] = useState('');
+    const [userFilter, setUserFilter] = useState('');
     // [FIX] 使用 ref 存储最新的筛选条件，避免 setInterval 闭包问题
     const filterRef = useRef(filter);
     const accountFilterRef = useRef(accountFilter);
+    const userFilterRef = useRef(userFilter);
     const currentPageRef = useRef(1);
     const [selectedLog, setSelectedLog] = useState<ProxyRequestLog | null>(null);
     const [isLoggingEnabled, setIsLoggingEnabled] = useState(false);
@@ -181,7 +183,17 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
         return Array.from(emailSet).sort();
     }, [logs, accounts]);
 
-    const loadData = async (page = 1, searchFilter = filter, accountEmailFilter = accountFilter) => {
+    const uniqueUsers = useMemo(() => {
+        const userSet = new Set<string>();
+        logs.forEach(log => {
+            if (log.username) {
+                userSet.add(log.username);
+            }
+        });
+        return Array.from(userSet).sort();
+    }, [logs]);
+
+    const loadData = async (page = 1, searchFilter = filter, accountEmailFilter = accountFilter, usrFilter = userFilter) => {
         if (loading) return;
         setLoading(true);
 
@@ -203,15 +215,14 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
 
             const errorsOnly = searchFilter === '__ERROR__';
             const baseFilter = errorsOnly ? '' : searchFilter;
-            const actualFilter = accountEmailFilter
-                ? (baseFilter ? `${baseFilter} ${accountEmailFilter}` : accountEmailFilter)
-                : baseFilter;
 
             // Get count with filter
             const count = await Promise.race([
                 invoke<number>('get_proxy_logs_count_filtered', {
-                    filter: actualFilter,
-                    errorsOnly: errorsOnly
+                    filter: baseFilter,
+                    errorsOnly: errorsOnly,
+                    accountFilter: accountEmailFilter || null,
+                    userFilter: usrFilter || null
                 }),
                 timeoutPromise
             ]) as number;
@@ -221,10 +232,12 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
             const offset = (page - 1) * pageSize;
             const history = await Promise.race([
                 invoke<ProxyRequestLog[]>('get_proxy_logs_filtered', {
-                    filter: actualFilter,
+                    filter: baseFilter,
                     errorsOnly: errorsOnly,
                     limit: pageSize,
-                    offset: offset
+                    offset: offset,
+                    accountFilter: accountEmailFilter || null,
+                    userFilter: usrFilter || null
                 }),
                 timeoutPromise
             ]) as ProxyRequestLog[];
@@ -260,7 +273,7 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
         if (page >= 1 && page <= totalPages && page !== currentPage) {
             setCurrentPage(page);
             currentPageRef.current = page; // [FIX] 同步 ref
-            loadData(page, filter, accountFilter);
+            loadData(page, filter, accountFilter, userFilter);
         }
     };
 
@@ -343,7 +356,12 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
                         try {
                             const [currentStats, count] = await Promise.all([
                                 invoke<ProxyStats>('get_proxy_stats'),
-                                invoke<number>('get_proxy_logs_count_filtered', { filter: '', errorsOnly: false })
+                                invoke<number>('get_proxy_logs_count_filtered', {
+                                    filter: filterRef.current === '__ERROR__' ? '' : filterRef.current,
+                                    errorsOnly: filterRef.current === '__ERROR__',
+                                    accountFilter: accountFilterRef.current || null,
+                                    userFilter: userFilterRef.current || null
+                                })
                             ]);
                             if (isMountedRef.current) {
                                 if (currentStats) setStats(currentStats);
@@ -367,7 +385,7 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
             pollInterval = window.setInterval(() => {
                 if (isMountedRef.current && !loading) {
                     // [FIX] 使用 ref.current 获取最新的筛选条件
-                    loadData(currentPageRef.current, filterRef.current, accountFilterRef.current);
+                    loadData(currentPageRef.current, filterRef.current, accountFilterRef.current, userFilterRef.current);
                 }
             }, 10000);
         }
@@ -388,25 +406,20 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
     // Reload when pageSize changes
     useEffect(() => {
         setCurrentPage(1);
-        loadData(1, filter, accountFilter);
+        loadData(1, filter, accountFilter, userFilter);
     }, [pageSize]);
 
     // Reload when filter changes (search based on all logs)
     useEffect(() => {
         setCurrentPage(1);
-        loadData(1, filter, accountFilter);
+        loadData(1, filter, accountFilter, userFilter);
         // [FIX] 同步 ref 值，供 setInterval 使用
         filterRef.current = filter;
         accountFilterRef.current = accountFilter;
+        userFilterRef.current = userFilter;
         currentPageRef.current = 1;
-    }, [filter, accountFilter]);
+    }, [filter, accountFilter, userFilter]);
 
-    // Logs are already filtered and sorted by backend
-    // Apply account filter on frontend
-    const filteredLogs = useMemo(() => {
-        if (!accountFilter) return logs;
-        return logs.filter(log => log.account_email === accountFilter);
-    }, [logs, accountFilter]);
 
     const quickFilters = [
         { label: t('monitor.filters.all'), value: '' },
@@ -482,7 +495,7 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
                     <div className="relative">
                         <User className="absolute left-2.5 top-2 text-gray-400 z-10" size={14} />
                         <select
-                            className="select select-sm select-bordered pl-8 text-xs min-w-[140px] max-w-[220px]"
+                            className="select select-sm select-bordered pl-8 text-xs min-w-[120px] max-w-[200px]"
                             value={accountFilter}
                             onChange={(e) => setAccountFilter(e.target.value)}
                             title={t('monitor.filters.by_account')}
@@ -491,6 +504,23 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
                             {uniqueAccounts.map(email => (
                                 <option key={email} value={email} title={email}>
                                     {email}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="relative">
+                        <User className="absolute left-2.5 top-2 text-gray-400 z-10" size={14} />
+                        <select
+                            className="select select-sm select-bordered pl-8 text-xs min-w-[120px] max-w-[200px]"
+                            value={userFilter}
+                            onChange={(e) => setUserFilter(e.target.value)}
+                            title={t('monitor.filters.by_user')}
+                        >
+                            <option value="">{t('monitor.filters.all_users')}</option>
+                            {uniqueUsers.map(user => (
+                                <option key={user} value={user} title={user}>
+                                    {user}
                                 </option>
                             ))}
                         </select>
@@ -517,12 +547,12 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
                             {q.label}
                         </button>
                     ))}
-                    {(filter || accountFilter) && <button onClick={() => { setFilter(''); setAccountFilter(''); }} className="text-[10px] text-blue-500"> {t('monitor.filters.reset')} </button>}
+                    {(filter || accountFilter || userFilter) && <button onClick={() => { setFilter(''); setAccountFilter(''); setUserFilter(''); }} className="text-[10px] text-blue-500"> {t('monitor.filters.reset')} </button>}
                 </div>
             </div>
 
             <LogTable
-                logs={filteredLogs}
+                logs={logs}
                 loading={loading}
                 onLogClick={async (log: ProxyRequestLog) => {
                     setLoadingDetail(true);
@@ -640,10 +670,22 @@ export const ProxyMonitor: React.FC<ProxyMonitorProps> = ({ className }) => {
                                         )}
                                     </div>
                                 </div>
-                                {selectedLog.account_email && (
+                                {(selectedLog.account_email || selectedLog.username) && (
                                     <div className="mt-5 pt-5 border-t border-gray-200 dark:border-base-300">
-                                        <span className="block text-gray-500 dark:text-gray-400 uppercase font-black text-[10px] tracking-widest mb-2">{t('monitor.details.account_used')}</span>
-                                        <span className="font-mono font-semibold text-gray-900 dark:text-base-content text-xs">{selectedLog.account_email}</span>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                            {selectedLog.account_email && (
+                                                <div className="space-y-1.5">
+                                                    <span className="block text-gray-500 dark:text-gray-400 uppercase font-black text-[10px] tracking-widest">{t('monitor.details.account_used')}</span>
+                                                    <span className="font-mono font-semibold text-gray-900 dark:text-base-content text-xs break-all">{selectedLog.account_email}</span>
+                                                </div>
+                                            )}
+                                            {selectedLog.username && (
+                                                <div className="space-y-1.5">
+                                                    <span className="block text-gray-500 dark:text-gray-400 uppercase font-black text-[10px] tracking-widest">{t('monitor.details.username')}</span>
+                                                    <span className="font-mono font-semibold text-gray-900 dark:text-base-content text-xs break-all">{selectedLog.username}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>

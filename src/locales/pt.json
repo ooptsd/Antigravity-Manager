@@ -981,6 +981,7 @@
             "protocol": "Protocolo",
             "mapped_model": "Modelo Mapeado",
             "account_used": "Conta Utilizada",
+            "username": "User",
             "payload_empty": "Sem Carga"
         },
         "dialog": {

@@ -214,6 +214,10 @@ struct LogsRequest {
     filter: String,
     #[serde(default)]
     errors_only: bool,
+    #[serde(default)]
+    account_filter: Option<String>,
+    #[serde(default)]
+    user_filter: Option<String>,
 }
 
 // ============================================================================

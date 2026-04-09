@@ -980,6 +980,7 @@
             "mapped_model": "Modelo Mapeado",
             "protocol": "Protocolo",
             "account_used": "Cuenta Usada",
+            "username": "User",
             "id": "ID de Solicitud",
             "payload_empty": "Sin datos"
         },

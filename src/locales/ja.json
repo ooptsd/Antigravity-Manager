@@ -1105,6 +1105,7 @@
             "protocol": "プロトコル",
             "mapped_model": "マッピング後のモデル",
             "account_used": "使用アカウント",
+            "username": "ユーザー",
             "payload_empty": "ペイロードなし"
         },
         "dialog": {

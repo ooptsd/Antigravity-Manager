@@ -982,6 +982,7 @@
             "protocol": "Протокол",
             "mapped_model": "Сопоставленная модель",
             "account_used": "Использованный аккаунт",
+            "username": "User",
             "payload_empty": "Нет данных"
         },
         "dialog": {

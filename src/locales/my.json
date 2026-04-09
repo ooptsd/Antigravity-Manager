@@ -980,6 +980,7 @@
             "mapped_model": "Model Dipetakan",
             "protocol": "Protokol",
             "account_used": "Akaun Digunakan",
+            "username": "User",
             "id": "ID Permintaan",
             "payload_empty": "Tiada data"
         },

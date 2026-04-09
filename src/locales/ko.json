@@ -1014,6 +1014,7 @@
             "mapped_model": "매핑된 모델",
             "protocol": "프로토콜",
             "account_used": "사용된 계정",
+            "username": "사용자",
             "id": "요청 ID",
             "payload_empty": "데이터 없음"
         },
