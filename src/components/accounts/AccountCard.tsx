@@ -356,16 +356,16 @@ function AccountCard({ account, selected, onSelect, isCurrent: propIsCurrent, is
                         className={cn(
                             "p-1.5 rounded-lg transition-all",
                             account.proxy_disabled
-                                ? "text-gray-400 hover:text-green-600 hover:bg-green-50"
-                                : "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
+                                ? "text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30"
+                                : "text-green-600 dark:text-green-500 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30"
                         )}
                         onClick={(e) => { e.stopPropagation(); onToggleProxy(); }}
                         title={account.proxy_disabled ? t('accounts.enable_proxy') : t('accounts.disable_proxy')}
                     >
                         {account.proxy_disabled ? (
-                            <ToggleRight className="w-3.5 h-3.5" />
-                        ) : (
                             <ToggleLeft className="w-3.5 h-3.5" />
+                        ) : (
+                            <ToggleRight className="w-3.5 h-3.5" />
                         )}
                     </button>
                     <button
