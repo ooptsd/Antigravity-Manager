@@ -702,8 +702,7 @@ const UserToken: React.FC = () => {
                                                                 <motion.div
                                                                     initial={false}
                                                                     animate={{
-                                                                        scale: isSelected ? 1 : 0,
-                                                                        rotate: isSelected ? 180 : 0
+                                                                        scale: isSelected ? 1 : 0
                                                                     }}
                                                                     className={`w-5 h-5 rounded-md flex items-center justify-center ${
                                                                         isSelected
