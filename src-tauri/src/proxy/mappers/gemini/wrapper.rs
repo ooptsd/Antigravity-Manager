@@ -32,6 +32,11 @@ pub fn wrap_request(
     // 复制 body 以便修改
     let mut inner_request = body.clone();
 
+    // [FIX] 从 inner_request 中移除 model 字段，防止其覆盖外层包装的 mapped_model
+    if let Some(obj) = inner_request.as_object_mut() {
+        obj.remove("model");
+    }
+
     // 深度清理 [undefined] 字符串 (Cherry Studio 等客户端常见注入)
     crate::proxy::mappers::common_utils::deep_clean_undefined(&mut inner_request, 0);
 
