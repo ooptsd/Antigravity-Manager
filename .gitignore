@@ -15,6 +15,7 @@ dist-ssr
 dist
 
 # Editor directories and files
+.trae/*
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -46,3 +47,4 @@ __pycache__/
 
 DOCKER_DEPLOYMENT.md
 pnpm-lock.yaml
+dist/index.html

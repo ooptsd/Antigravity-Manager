@@ -16,7 +16,7 @@ const MAX_BODY_SIZE: usize = 10 * 1024 * 1024; // 10MB
 
 /// 从请求体中提取模型名称
 /// 支持多种协议：OpenAI、Claude、Gemini（URL 路径）
-fn extract_model_from_request(request: &Request, body: &Option<Bytes>, path: &str) -> Option<String> {
+fn extract_model_from_request(_request: &Request, body: &Option<Bytes>, path: &str) -> Option<String> {
     // Gemini 模型从 URL 路径提取: /v1beta/models/:model
     if path.contains("/v1beta/models/") {
         return path
@@ -43,7 +43,6 @@ fn extract_model_from_request(request: &Request, body: &Option<Bytes>, path: &st
 /// 提前读取请求体（用于在中间件中提取模型名称进行验证）
 async fn read_request_body(request: Request) -> (Request, Option<Bytes>) {
     let method = request.method().clone();
-    let path = request.uri().path().to_string();
     
     // 只对 POST/PUT/PATCH 方法尝试读取 body
     if method == axum::http::Method::POST 
@@ -262,7 +261,7 @@ async fn auth_middleware_internal(
             .headers()
             .get("x-forwarded-for")
             .and_then(|v| v.to_str().ok())
-            .map(|s| s.split(',').first().unwrap_or(s).trim().to_string())
+            .map(|s| s.split(',').next().unwrap_or(s).trim().to_string())
             .or_else(|| {
                 request
                     .headers()
