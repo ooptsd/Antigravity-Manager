@@ -236,7 +236,7 @@ impl ProxyMonitor {
         let search = search_text.unwrap_or_default();
 
         let res = tokio::task::spawn_blocking(move || {
-            crate::modules::proxy_db::get_logs_filtered(&search, errors_only, page_size, offset)
+            crate::modules::proxy_db::get_logs_filtered(&search, errors_only, None, None, page_size, offset)
         }).await;
 
         match res {
