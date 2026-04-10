@@ -457,7 +457,7 @@ const UserToken: React.FC = () => {
                                                 <span>{token.curfew_start} - {token.curfew_end}</span>
                                             </div>
                                         )}
-                                        {token.allowed_models && token.allowed_models.length > 0 && (
+                                        {token.allowed_models && token.allowed_models.length > 0 && token.allowed_models[0] !== "_none_" ? (
                                             <div className="mt-1.5 flex flex-wrap gap-1 max-w-[150px]">
                                                 {token.allowed_models.slice(0, 3).map((modelId) => (
                                                     <span
@@ -473,6 +473,18 @@ const UserToken: React.FC = () => {
                                                         +{token.allowed_models.length - 3}
                                                     </span>
                                                 )}
+                                            </div>
+                                        ) : token.allowed_models?.includes("_none_") ? (
+                                            <div className="mt-1.5">
+                                                <span className="px-1.5 py-0.5 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 text-[10px] rounded border border-red-100 dark:border-red-900/30">
+                                                    {t('user_token.no_models', { defaultValue: '无模型权限' })}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-1.5">
+                                                <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400 text-[10px] rounded border border-emerald-100 dark:border-emerald-900/30">
+                                                    {t('user_token.all_models', { defaultValue: '无限制 (全模型可用)' })}
+                                                </span>
                                             </div>
                                         )}
                                     </td>
@@ -656,7 +668,7 @@ const UserToken: React.FC = () => {
                                     <button
                                         type="button"
                                         className="btn btn-xs btn-outline btn-primary flex-1"
-                                        onClick={() => setNewAllowedModels(Object.keys(MODEL_CONFIG))}
+                                        onClick={() => setNewAllowedModels([])}
                                     >
                                         <Check className="w-3 h-3" />
                                         {t('user_token.select_all', { defaultValue: '全选' })}
@@ -664,7 +676,7 @@ const UserToken: React.FC = () => {
                                     <button
                                         type="button"
                                         className="btn btn-xs btn-outline btn-error flex-1"
-                                        onClick={() => setNewAllowedModels([])}
+                                        onClick={() => setNewAllowedModels(["_none_"])}
                                     >
                                         <X className="w-3 h-3" />
                                         {t('user_token.clear_all', { defaultValue: '清空' })}
@@ -686,7 +698,7 @@ const UserToken: React.FC = () => {
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {models.map((model) => {
-                                                    const isSelected = newAllowedModels.includes(model.id);
+                                                    const isSelected = newAllowedModels.length === 0 || (newAllowedModels.length > 0 && newAllowedModels[0] !== "_none_" && newAllowedModels.includes(model.id));
                                                     return (
                                                         <motion.label
                                                             key={model.id}
@@ -724,10 +736,18 @@ const UserToken: React.FC = () => {
                                                                 className="hidden"
                                                                 checked={isSelected}
                                                                 onChange={(e) => {
-                                                                    if (e.target.checked) {
-                                                                        setNewAllowedModels([...newAllowedModels, model.id]);
+                                                                    if (newAllowedModels.length === 0) {
+                                                                        const allKeys = Object.keys(MODEL_CONFIG);
+                                                                        setNewAllowedModels(allKeys.filter(id => id !== model.id));
+                                                                    } else if (newAllowedModels.includes("_none_")) {
+                                                                        if (e.target.checked) setNewAllowedModels([model.id]);
                                                                     } else {
-                                                                        setNewAllowedModels(newAllowedModels.filter(id => id !== model.id));
+                                                                        if (e.target.checked) {
+                                                                            setNewAllowedModels([...newAllowedModels, model.id]);
+                                                                        } else {
+                                                                            const nextList = newAllowedModels.filter(id => id !== model.id);
+                                                                            setNewAllowedModels(nextList.length === 0 ? ["_none_"] : nextList);
+                                                                        }
                                                                     }
                                                                 }}
                                                             />
@@ -859,7 +879,7 @@ const UserToken: React.FC = () => {
                                     <button
                                         type="button"
                                         className="btn btn-xs btn-outline btn-primary flex-1"
-                                        onClick={() => setEditAllowedModels(Object.keys(MODEL_CONFIG))}
+                                        onClick={() => setEditAllowedModels([])}
                                     >
                                         <Check className="w-3 h-3" />
                                         {t('user_token.select_all', { defaultValue: '全选' })}
@@ -867,7 +887,7 @@ const UserToken: React.FC = () => {
                                     <button
                                         type="button"
                                         className="btn btn-xs btn-outline btn-error flex-1"
-                                        onClick={() => setEditAllowedModels([])}
+                                        onClick={() => setEditAllowedModels(["_none_"])}
                                     >
                                         <X className="w-3 h-3" />
                                         {t('user_token.clear_all', { defaultValue: '清空' })}
@@ -889,7 +909,7 @@ const UserToken: React.FC = () => {
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {models.map((model) => {
-                                                    const isSelected = editAllowedModels.includes(model.id);
+                                                    const isSelected = editAllowedModels.length === 0 || (editAllowedModels.length > 0 && editAllowedModels[0] !== "_none_" && editAllowedModels.includes(model.id));
                                                     return (
                                                         <motion.label
                                                             key={model.id}
@@ -928,10 +948,18 @@ const UserToken: React.FC = () => {
                                                                 className="hidden"
                                                                 checked={isSelected}
                                                                 onChange={(e) => {
-                                                                    if (e.target.checked) {
-                                                                        setEditAllowedModels([...editAllowedModels, model.id]);
+                                                                    if (editAllowedModels.length === 0) {
+                                                                        const allKeys = Object.keys(MODEL_CONFIG);
+                                                                        setEditAllowedModels(allKeys.filter(id => id !== model.id));
+                                                                    } else if (editAllowedModels.includes("_none_")) {
+                                                                        if (e.target.checked) setEditAllowedModels([model.id]);
                                                                     } else {
-                                                                        setEditAllowedModels(editAllowedModels.filter(id => id !== model.id));
+                                                                        if (e.target.checked) {
+                                                                            setEditAllowedModels([...editAllowedModels, model.id]);
+                                                                        } else {
+                                                                            const nextList = editAllowedModels.filter(id => id !== model.id);
+                                                                            setEditAllowedModels(nextList.length === 0 ? ["_none_"] : nextList);
+                                                                        }
                                                                     }
                                                                 }}
                                                             />

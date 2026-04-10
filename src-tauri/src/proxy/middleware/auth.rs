@@ -23,7 +23,13 @@ fn extract_model_from_request(_request: &Request, body: &Option<Bytes>, path: &s
             .split("/v1beta/models/")
             .nth(1)
             .and_then(|s| s.split('/').next())
-            .map(|s| s.to_string());
+            .map(|s| {
+                if let Some((m, _)) = s.rsplit_once(':') {
+                    m.to_string()
+                } else {
+                    s.to_string()
+                }
+            });
     }
 
     // OpenAI/Claude 等从 JSON body 中提取
@@ -135,7 +141,12 @@ async fn auth_middleware_internal(
             if let Some(token) = api_key {
                 // 尝试验证是否为 User Token（不阻止请求，只记录）
                 // 提取模型名称用于验证
-                let model_name = extract_model_from_request(&request, &request_body, &path);
+                let mut model_name = extract_model_from_request(&request, &request_body, &path);
+                if let Some(ref mut m) = model_name {
+                    if let Some((clean_m, _)) = m.split_once(':') {
+                        *m = clean_m.to_string();
+                    }
+                }
                 
                 if let Ok(Some(user_token)) = crate::modules::user_token_db::get_token_by_value(token) {
                     // 如果配置了 allowed_models，进行模型权限验证
@@ -272,7 +283,12 @@ async fn auth_middleware_internal(
             .unwrap_or_else(|| "127.0.0.1".to_string()); // Default fallback
 
         // [FIX] 提取模型名称并传递给 validate_token
-        let model_name = extract_model_from_request(&request, &request_body, &path);
+        let mut model_name = extract_model_from_request(&request, &request_body, &path);
+                if let Some(ref mut m) = model_name {
+                    if let Some((clean_m, _)) = m.split_once(':') {
+                        *m = clean_m.to_string();
+                    }
+                }
         
         match crate::modules::user_token_db::validate_token(token, &client_ip, model_name.as_deref()) {
             Ok((true, _)) => {
