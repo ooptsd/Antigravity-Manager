@@ -116,11 +116,11 @@ fn extract_version(raw: &str) -> String {
     for part in parts {
         if let Some(slash_idx) = part.find('/') {
             let after = &part[slash_idx + 1..];
-            if after.contains('.') && after.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+            if after.contains('.') && after.chars().next().is_some_and(|c| c.is_ascii_digit()) {
                 return after.to_string();
             }
         }
-        if part.contains('.') && part.chars().next().map_or(false, |c| c.is_ascii_digit())
+        if part.contains('.') && part.chars().next().is_some_and(|c| c.is_ascii_digit())
             && part.chars().all(|c| c.is_ascii_digit() || c == '.')
         {
             return part.to_string();

@@ -56,13 +56,13 @@ impl SystemIntegration for DesktopIntegration {
         process::start_antigravity()?;
         
         // 6. 更新托盘
-        let _ = crate::modules::tray::update_tray_menus(&self.app_handle);
+        crate::modules::tray::update_tray_menus(&self.app_handle);
         
         Ok(())
     }
 
     fn update_tray(&self) {
-        let _ = crate::modules::tray::update_tray_menus(&self.app_handle);
+        crate::modules::tray::update_tray_menus(&self.app_handle);
     }
 
     fn show_notification(&self, title: &str, body: &str) {

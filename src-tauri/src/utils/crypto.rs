@@ -42,9 +42,8 @@ where
     }
 
     // [FIX #1738] 检查魔术前缀
-    if raw.starts_with(ENCRYPTED_PREFIX) {
+    if let Some(ciphertext) = raw.strip_prefix(ENCRYPTED_PREFIX) {
         // 新版格式：去前缀后解密
-        let ciphertext = &raw[ENCRYPTED_PREFIX.len()..];
         match decrypt_string_internal(ciphertext) {
             Ok(plaintext) => Ok(plaintext),
             Err(_) => {

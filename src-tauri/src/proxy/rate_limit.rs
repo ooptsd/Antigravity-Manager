@@ -336,7 +336,7 @@ impl RateLimitTracker {
                 if let Some(reason_str) = json.get("error")
                     .and_then(|e| e.get("details"))
                     .and_then(|d| d.as_array())
-                    .and_then(|a| a.get(0))
+                    .and_then(|a| a.first())
                     .and_then(|o| o.get("reason"))
                     .and_then(|v| v.as_str()) {
                     
@@ -428,7 +428,7 @@ impl RateLimitTracker {
                 if let Some(delay_str) = json.get("error")
                     .and_then(|e| e.get("details"))
                     .and_then(|d| d.as_array())
-                    .and_then(|a| a.get(0))
+                    .and_then(|a| a.first())
                     .and_then(|o| o.get("metadata"))  // 添加 metadata 层级
                     .and_then(|m| m.get("quotaResetDelay"))
                     .and_then(|v| v.as_str()) {

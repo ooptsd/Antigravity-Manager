@@ -51,7 +51,7 @@ pub fn remap_function_call_args(name: &str, args: &mut Value) {
                 if !obj.contains_key("path") {
                     if let Some(paths) = obj.remove("paths") {
                         let path_str = if let Some(arr) = paths.as_array() {
-                            arr.get(0)
+                            arr.first()
                                 .and_then(|v| v.as_str())
                                 .unwrap_or(".")
                                 .to_string()
@@ -95,7 +95,7 @@ pub fn remap_function_call_args(name: &str, args: &mut Value) {
                 if !obj.contains_key("path") {
                     if let Some(paths) = obj.remove("paths") {
                         let path_str = if let Some(arr) = paths.as_array() {
-                            arr.get(0)
+                            arr.first()
                                 .and_then(|v| v.as_str())
                                 .unwrap_or(".")
                                 .to_string()
@@ -300,7 +300,7 @@ impl StreamingState {
         let mut message = json!({
             "id": raw_json.get("responseId")
                 .and_then(|v| v.as_str())
-                .unwrap_or_else(|| "msg_unknown"),
+                .unwrap_or("msg_unknown"),
             "type": "message",
             "role": "assistant",
             "content": [],
@@ -992,8 +992,8 @@ impl<'a> PartProcessor<'a> {
         // Gemini often hallucinates incorrect MCP tool names, e.g.:
         //   "mcp__puppeteer_navigate" instead of "mcp__puppeteer__puppeteer_navigate"
         // We attempt to find the closest registered tool name.
-        if tool_name.starts_with("mcp__") && !self.state.registered_tool_names.is_empty() {
-            if !self.state.registered_tool_names.contains(&tool_name) {
+        if tool_name.starts_with("mcp__") && !self.state.registered_tool_names.is_empty()
+            && !self.state.registered_tool_names.contains(&tool_name) {
                 if let Some(matched) = fuzzy_match_mcp_tool(&tool_name, &self.state.registered_tool_names) {
                     tracing::warn!(
                         "[FIX #MCP] Corrected MCP tool name: '{}' → '{}'",
@@ -1007,7 +1007,6 @@ impl<'a> PartProcessor<'a> {
                     );
                 }
             }
-        }
 
         // 1. 发送 content_block_start (input 为空对象)
         let mut tool_use = json!({
@@ -1127,7 +1126,7 @@ fn fuzzy_match_mcp_tool(hallucinated: &str, registered: &[String]) -> Option<Str
     // Strategy 3: Normalized token overlap scoring
     // Split both names into tokens by '_' and '__', compute overlap ratio  
     let hall_tokens: Vec<&str> = hallucinated_suffix
-        .split(|c: char| c == '_')
+        .split('_')
         .filter(|s| !s.is_empty())
         .collect();
 
@@ -1142,7 +1141,7 @@ fn fuzzy_match_mcp_tool(hallucinated: &str, registered: &[String]) -> Option<Str
     for tool in &mcp_tools {
         let tool_after_mcp = &tool[5..]; // skip "mcp__"
         let tool_tokens: Vec<&str> = tool_after_mcp
-            .split(|c: char| c == '_')
+            .split('_')
             .filter(|s| !s.is_empty())
             .collect();
 

@@ -214,7 +214,7 @@ fn process_sse_line(line: &str, state: &mut StreamingState, trace_id: &str, emai
             // 提取搜索词
             if let Some(query) = grounding.get("webSearchQueries")
                 .and_then(|v| v.as_array())
-                .and_then(|arr| arr.get(0))
+                .and_then(|arr| arr.first())
                 .and_then(|v| v.as_str())
             {
                 state.web_search_query = Some(query.to_string());

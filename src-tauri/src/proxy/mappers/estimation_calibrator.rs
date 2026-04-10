@@ -50,7 +50,7 @@ impl EstimationCalibrator {
         let count = self.sample_count.fetch_add(1, Ordering::Relaxed) + 1;
 
         // Update calibration factor every 5 requests
-        if count % 5 == 0 {
+        if count.is_multiple_of(5) {
             self.update_calibration();
         }
     }

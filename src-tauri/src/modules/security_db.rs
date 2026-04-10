@@ -500,8 +500,8 @@ pub fn get_blacklist_entry_for_ip(ip: &str) -> Result<Option<IpBlacklistEntry>, 
     // CIDR 匹配
     let entries = get_blacklist()?;
     for entry in entries {
-        if entry.ip_pattern.contains('/') {
-            if cidr_match(ip, &entry.ip_pattern) {
+        if entry.ip_pattern.contains('/')
+            && cidr_match(ip, &entry.ip_pattern) {
                 // 增加命中计数
                 let _ = conn.execute(
                     "UPDATE ip_blacklist SET hit_count = hit_count + 1 WHERE id = ?1",
@@ -509,7 +509,6 @@ pub fn get_blacklist_entry_for_ip(ip: &str) -> Result<Option<IpBlacklistEntry>, 
                 );
                 return Ok(Some(entry));
             }
-        }
     }
 
     Ok(None)
@@ -639,11 +638,10 @@ pub fn is_ip_in_whitelist(ip: &str) -> Result<bool, String> {
     // CIDR 匹配
     let entries = get_whitelist()?;
     for entry in entries {
-        if entry.ip_pattern.contains('/') {
-            if cidr_match(ip, &entry.ip_pattern) {
+        if entry.ip_pattern.contains('/')
+            && cidr_match(ip, &entry.ip_pattern) {
                 return Ok(true);
             }
-        }
     }
 
     Ok(false)

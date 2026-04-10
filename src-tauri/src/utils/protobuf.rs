@@ -148,7 +148,7 @@ pub fn create_oauth_field(access_token: &str, refresh_token: &str, expiry: i64) 
 
     // Field 4: expiry (Nested Timestamp message, wire_type = 2)
     // Timestamp message contains: Field 1: seconds (int64, wire_type = 0)
-    let timestamp_tag = (1 << 3) | 0;  // Field 1, varint
+    let timestamp_tag = 1 << 3;  // Field 1, varint
     let timestamp_msg = {
         let mut m = encode_varint(timestamp_tag);
         m.extend(encode_varint(expiry as u64));
@@ -201,7 +201,7 @@ pub fn encode_string_field(field_num: u32, value: &str) -> Vec<u8> {
 
 /// 编码 varint 字段 (wire_type = 0)
 pub fn encode_varint_field(field_num: u32, value: u64) -> Vec<u8> {
-    let tag = (field_num << 3) | 0;
+    let tag = field_num << 3;
     let mut f = encode_varint(tag as u64);
     f.extend(encode_varint(value));
     f
@@ -224,7 +224,7 @@ pub fn create_oauth_info(
     let field3 = encode_string_field(3, refresh_token);
     
     // Field 4: expiry (嵌套的 Timestamp 消息)
-    let timestamp_tag = (1 << 3) | 0;
+    let timestamp_tag = 1 << 3;
     let mut timestamp_msg = encode_varint(timestamp_tag);
     timestamp_msg.extend(encode_varint(expiry as u64));
     let field4 = encode_len_delim_field(4, &timestamp_msg);
@@ -247,7 +247,7 @@ pub fn create_oauth_info(
 fn decode_legacy_base64_payload_if_needed(payload: Vec<u8>) -> Vec<u8> {
     use base64::{engine::general_purpose, Engine as _};
 
-    let looks_like_legacy_base64 = payload.len() % 4 == 0
+    let looks_like_legacy_base64 = payload.len().is_multiple_of(4)
         && !payload.is_empty()
         && payload
             .iter()

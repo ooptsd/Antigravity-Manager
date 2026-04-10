@@ -20,18 +20,15 @@ const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
 /// Cloudflared隧道模式
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum TunnelMode {
     /// 快速隧道(临时URL)
+    #[default]
     Quick,
     /// 认证隧道(使用Token)
     Auth,
 }
 
-impl Default for TunnelMode {
-    fn default() -> Self {
-        Self::Quick
-    }
-}
 
 /// Cloudflared配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,6 +61,7 @@ impl Default for CloudflaredConfig {
 
 /// Cloudflared状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct CloudflaredStatus {
     pub installed: bool,
     pub version: Option<String>,
@@ -72,17 +70,6 @@ pub struct CloudflaredStatus {
     pub error: Option<String>,
 }
 
-impl Default for CloudflaredStatus {
-    fn default() -> Self {
-        Self {
-            installed: false,
-            version: None,
-            running: false,
-            url: None,
-            error: None,
-        }
-    }
-}
 
 /// Cloudflared管理器状态
 pub struct CloudflaredManager {
@@ -311,7 +298,7 @@ impl CloudflaredManager {
 
         *self.process.write().await = Some(child);
         self.update_status(|s| {
-            s.installed = installed.clone();
+            s.installed = installed;
             s.version = version.clone();
             s.running = true;
             s.error = None;

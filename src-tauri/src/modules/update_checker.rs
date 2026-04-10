@@ -99,10 +99,10 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
 
     // 4. Try jsDelivr
     match check_static_url(JSDELIVR_URL, "jsDelivr").await {
-        Ok(info) => return Ok(info),
+        Ok(info) => Ok(info),
         Err(e) => {
             logger::log_error(&format!("All update checks failed. Last error: {}", e));
-            return Err(e);
+            Err(e)
         }
     }
 }

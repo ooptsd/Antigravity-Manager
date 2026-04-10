@@ -619,11 +619,11 @@ pub async fn handle_generate(
         }
 
         // [FIX] 处理 403 + VALIDATION_REQUIRED 错误
-        if status_code == 403 {
-            if error_text.contains("VALIDATION_REQUIRED") ||
+        if status_code == 403
+            && (error_text.contains("VALIDATION_REQUIRED") ||
                error_text.contains("verify your account") ||
                error_text.contains("validation_url") ||
-               error_text.contains("verification_url")
+               error_text.contains("verification_url"))
             {
                 tracing::warn!(
                     "[Gemini] VALIDATION_REQUIRED detected on account {}, marking as forbidden",
@@ -680,7 +680,6 @@ pub async fn handle_generate(
                 )
                     .into_response());
             }
-        }
 
         // 404 等由于模型配置或路径错误的 HTTP 异常，直接报错，不进行无效轮换
         error!(

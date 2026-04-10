@@ -17,7 +17,7 @@ pub fn transform_openai_request(
     let tools_val = request
         .tools
         .as_ref()
-        .map(|list| list.iter().map(|v| v.clone()).collect::<Vec<_>>());
+        .map(|list| list.to_vec());
 
     let mapped_model_lower = mapped_model.to_lowercase();
 
@@ -312,7 +312,7 @@ pub fn transform_openai_request(
 
             // Handle tool calls (assistant message)
             if let Some(tool_calls) = &msg.tool_calls {
-                for (_index, tc) in tool_calls.iter().enumerate() {
+                for tc in tool_calls.iter() {
                     /* 暂时移除：防止 Codex CLI 界面碎片化
                     if index == 0 && parts.is_empty() {
                          if mapped_model.contains("gemini-3") {

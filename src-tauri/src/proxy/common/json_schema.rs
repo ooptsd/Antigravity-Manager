@@ -142,7 +142,7 @@ fn flatten_refs(
     // 检查并替换 $ref
     if let Some(Value::String(ref_path)) = map.remove("$ref") {
         // 解析引用名 (例如 #/$defs/MyType -> MyType)
-        let ref_name = ref_path.split('/').last().unwrap_or(&ref_path);
+        let ref_name = ref_path.split('/').next_back().unwrap_or(&ref_path);
 
         if let Some(def_schema) = defs.get(ref_name) {
             // 将定义的内容合并到当前 map
@@ -399,11 +399,10 @@ fn clean_json_schema_recursive(value: &mut Value, is_schema_node: bool, depth: u
                 // 之前的实现会为空 Object 注入 reason 字段，导致 Gemini CLI 等工具报 "malformed function call"
                 // 因为模型会生成包含 reason 参数的调用，但工具定义中并没有这个参数
                 // 现在改为：空 Object 保持空的 properties，让 Gemini 模型自行决定是否需要参数
-                if map.get("type").and_then(|t| t.as_str()) == Some("object") {
-                    if !map.contains_key("properties") {
+                if map.get("type").and_then(|t| t.as_str()) == Some("object")
+                    && !map.contains_key("properties") {
                         map.insert("properties".to_string(), serde_json::json!({}));
                     }
-                }
 
                 // 7. [SAFETY] Required 字段对齐
                 let valid_prop_keys: Option<std::collections::HashSet<String>> = map

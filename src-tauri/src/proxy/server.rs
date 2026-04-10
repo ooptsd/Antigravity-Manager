@@ -2951,23 +2951,22 @@ async fn handle_oauth_callback(
             }
 
             // Success HTML
-            Ok(Html(format!(
-                r#"
+            Ok(Html(r#"
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <title>Authorization Successful</title>
                     <style>
-                        body {{ font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f9fafb; padding: 20px; box-sizing: border-box; }}
-                        .card {{ background: white; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); text-align: center; max-width: 500px; width: 100%; }}
-                        .icon {{ font-size: 3rem; margin-bottom: 1rem; }}
-                        h1 {{ color: #059669; margin: 0 0 1rem 0; font-size: 1.5rem; }}
-                        p {{ color: #4b5563; line-height: 1.5; margin-bottom: 1.5rem; }}
-                        .fallback-box {{ background-color: #f3f4f6; padding: 1.25rem; border-radius: 1rem; border: 1px dashed #d1d5db; text-align: left; margin-top: 1.5rem; }}
-                        .fallback-title {{ font-weight: 600; font-size: 0.875rem; color: #1f2937; margin-bottom: 0.5rem; display: block; }}
-                        .fallback-text {{ font-size: 0.75rem; color: #6b7280; margin-bottom: 1rem; display: block; }}
-                        .copy-btn {{ width: 100%; padding: 0.75rem; background-color: #3b82f6; color: white; border: none; border-radius: 0.75rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }}
-                        .copy-btn:hover {{ background-color: #2563eb; }}
+                        body { font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f9fafb; padding: 20px; box-sizing: border-box; }
+                        .card { background: white; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); text-align: center; max-width: 500px; width: 100%; }
+                        .icon { font-size: 3rem; margin-bottom: 1rem; }
+                        h1 { color: #059669; margin: 0 0 1rem 0; font-size: 1.5rem; }
+                        p { color: #4b5563; line-height: 1.5; margin-bottom: 1.5rem; }
+                        .fallback-box { background-color: #f3f4f6; padding: 1.25rem; border-radius: 1rem; border: 1px dashed #d1d5db; text-align: left; margin-top: 1.5rem; }
+                        .fallback-title { font-weight: 600; font-size: 0.875rem; color: #1f2937; margin-bottom: 0.5rem; display: block; }
+                        .fallback-text { font-size: 0.75rem; color: #6b7280; margin-bottom: 1rem; display: block; }
+                        .copy-btn { width: 100%; padding: 0.75rem; background-color: #3b82f6; color: white; border: none; border-radius: 0.75rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
+                        .copy-btn:hover { background-color: #2563eb; }
                     </style>
                 </head>
                 <body>
@@ -2984,31 +2983,30 @@ async fn handle_oauth_callback(
                     </div>
                     <script>
                         // 1. Notify opener if exists
-                        if (window.opener) {{
-                            window.opener.postMessage({{
+                        if (window.opener) {
+                            window.opener.postMessage({
                                 type: 'oauth-success',
                                 message: 'login success'
-                            }}, '*');
-                        }}
+                            }, '*');
+                        }
 
                         // 2. Copy URL functionality
-                        function copyUrl() {{
-                            navigator.clipboard.writeText(window.location.href).then(() => {{
+                        function copyUrl() {
+                            navigator.clipboard.writeText(window.location.href).then(() => {
                                 const btn = document.getElementById('copyBtn');
                                 const originalText = btn.innerText;
                                 btn.innerText = '✅ Link Copied!';
                                 btn.style.backgroundColor = '#059669';
-                                setTimeout(() => {{
+                                setTimeout(() => {
                                     btn.innerText = originalText;
                                     btn.style.backgroundColor = '#3b82f6';
-                                }}, 2000);
-                            }});
-                        }}
+                                }, 2000);
+                            });
+                        }
                     </script>
                 </body>
                 </html>
-            "#
-            )))
+            "#.to_string()))
         }
         Err(e) => {
             error!("OAuth exchange failed: {}", e);

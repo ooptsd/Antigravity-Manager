@@ -192,7 +192,7 @@ fn sort_thinking_blocks_first(messages: &mut [Message]) {
                 let mut needs_reorder = false;
                 let mut saw_non_thinking = false;
 
-                for (_i, block) in blocks.iter().enumerate() {
+                for block in blocks.iter() {
                     match block {
                         ContentBlock::Thinking { .. } | ContentBlock::RedactedThinking { .. } => {
                             if saw_non_thinking {
@@ -1167,20 +1167,18 @@ fn build_contents(
                                 // [NEW v3.3.17] Try session-based signature cache first (Layer 3)
                                 // This provides conversation-level isolation
                                 crate::proxy::SignatureCache::global().get_session_signature(session_id)
-                                    .map(|s| {
+                                    .inspect(|s| {
                                         tracing::info!(
                                             "[Claude-Request] Recovered signature from SESSION cache (session: {}, len: {})",
                                             session_id, s.len()
                                         );
-                                        s
                                     })
                             })
                             .or_else(|| {
                                 // Try tool-specific signature cache (Layer 1)
                                 crate::proxy::SignatureCache::global().get_tool_signature(id)
-                                    .map(|s| {
+                                    .inspect(|_s| {
                                         tracing::info!("[Claude-Request] Recovered signature from TOOL cache for tool_id: {}", id);
-                                        s
                                     })
                             })
                             .or_else(|| {
@@ -1299,8 +1297,8 @@ fn build_contents(
                                 for block in arr {
                                     if let Some(text) = block.get("text").and_then(|v| v.as_str()) {
                                         texts.push(text.to_string());
-                                    } else if block.get("source").is_some() {
-                                        if block.get("type").and_then(|v| v.as_str()) == Some("image") {
+                                    } else if block.get("source").is_some()
+                                        && block.get("type").and_then(|v| v.as_str()) == Some("image") {
                                             let source = block.get("source").unwrap();
                                             if let (Some(media_type), Some(data)) = (
                                                 source.get("media_type").and_then(|v| v.as_str()),
@@ -1314,7 +1312,6 @@ fn build_contents(
                                                 }));
                                             }
                                         }
-                                    }
                                 }
                                 texts.join("\n")
                             }
@@ -1437,7 +1434,7 @@ fn build_contents(
         } else {
             // [Crucial Check] 即使有 thought 块，也必须保证它位于 parts 的首位 (Index 0)
             // 且必须包含 thought: true 标记
-            let first_is_thought = parts.get(0).map_or(false, |p| {
+            let first_is_thought = parts.first().is_some_and(|p| {
                 (p.get("thought").is_some() || p.get("thoughtSignature").is_some())
                     && p.get("text").is_some() // 对于 v1internal，通常 text + thought: true 才是合规的思维块
             });
@@ -1589,7 +1586,7 @@ fn build_google_contents(
         }
     }
 
-    for (_i, msg) in messages.iter().enumerate() {
+    for msg in messages.iter() {
         let google_content = build_google_content(
             msg,
             claude_req,

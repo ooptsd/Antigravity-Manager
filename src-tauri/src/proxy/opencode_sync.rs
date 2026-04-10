@@ -295,7 +295,7 @@ fn extract_version(raw: &str) -> String {
 
 fn is_valid_version(s: &str) -> bool {
     // A valid version should start with digit and contain at least one dot
-    s.chars().next().map_or(false, |c| c.is_ascii_digit())
+    s.chars().next().is_some_and(|c| c.is_ascii_digit())
         && s.contains('.')
         && s.chars().all(|c| c.is_ascii_digit() || c == '.')
 }

@@ -216,16 +216,13 @@ pub fn start_scheduler(app_handle: Option<tauri::AppHandle>, proxy_state: crate:
                         }
                         
                         for handle in handles {
-                            match handle.await {
-                                Ok((true, history_key)) => {
-                                    success += 1;
-                                    record_warmup_history(&history_key, now_ts);
-                                }
-                                _ => {}
+                            if let Ok((true, history_key)) = handle.await {
+                                success += 1;
+                                record_warmup_history(&history_key, now_ts);
                             }
                         }
                         
-                        if batch_idx < (warmup_tasks.len() + batch_size - 1) / batch_size - 1 {
+                        if batch_idx < warmup_tasks.len().div_ceil(batch_size) - 1 {
                             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                         }
                     }

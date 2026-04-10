@@ -3,7 +3,6 @@ use serde_json;
 
 use crate::models::AppConfig;
 use super::account::get_data_dir;
-use tracing::warn;
 
 const CONFIG_FILE: &str = "gui_config.json";
 
@@ -45,11 +44,10 @@ pub fn load_app_config() -> Result<AppConfig, String> {
         if let Some(anthropic) = proxy.get_mut("anthropic_mapping").and_then(|m| m.as_object_mut()) {
             for (k, v) in anthropic.iter() {
                 // Only move non-series fields, as series fields are now handled by Preset logic or builtin tables
-                if !k.ends_with("-series") {
-                    if !custom_mapping.contains_key(k) {
+                if !k.ends_with("-series")
+                    && !custom_mapping.contains_key(k) {
                         custom_mapping.insert(k.clone(), v.clone());
                     }
-                }
             }
             // Remove old field
             proxy.as_object_mut().unwrap().remove("anthropic_mapping");
@@ -59,11 +57,10 @@ pub fn load_app_config() -> Result<AppConfig, String> {
         // Migrate OpenAI mapping
         if let Some(openai) = proxy.get_mut("openai_mapping").and_then(|m| m.as_object_mut()) {
             for (k, v) in openai.iter() {
-                if !k.ends_with("-series") {
-                    if !custom_mapping.contains_key(k) {
+                if !k.ends_with("-series")
+                    && !custom_mapping.contains_key(k) {
                         custom_mapping.insert(k.clone(), v.clone());
                     }
-                }
             }
             // Remove old field
             proxy.as_object_mut().unwrap().remove("openai_mapping");

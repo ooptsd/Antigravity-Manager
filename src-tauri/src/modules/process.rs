@@ -436,9 +436,7 @@ pub fn close_antigravity(#[allow(unused_variables)] timeout_secs: u64) -> Result
 
                                     if !is_helper_by_args && !is_helper_by_name {
                                         main_pid = Some(pid_u32);
-                                        crate::modules::logger::log_info(&format!(
-                                            "   => Identified as main process (manual path match)"
-                                        ));
+                                        crate::modules::logger::log_info("   => Identified as main process (manual path match)");
                                         break;
                                     }
                                 }
@@ -461,14 +459,10 @@ pub fn close_antigravity(#[allow(unused_variables)] timeout_secs: u64) -> Result
                     if !is_helper_by_name && !is_helper_by_args {
                         if main_pid.is_none() {
                             main_pid = Some(pid_u32);
-                            crate::modules::logger::log_info(&format!(
-                                "   => Identified as main process (Name/Args analysis)"
-                            ));
+                            crate::modules::logger::log_info("   => Identified as main process (Name/Args analysis)");
                         }
                     } else {
-                        crate::modules::logger::log_info(&format!(
-                            "   => Identified as helper process (Helper/Args)"
-                        ));
+                        crate::modules::logger::log_info("   => Identified as helper process (Helper/Args)");
                     }
                 }
             }

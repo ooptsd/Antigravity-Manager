@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use dashmap::DashMap;
 
 // 动态官方废弃模型转发表 (old_model_id -> new_model_id)
-pub static DYNAMIC_MODEL_FORWARDING_RULES: Lazy<DashMap<String, String>> = Lazy::new(|| DashMap::new());
+pub static DYNAMIC_MODEL_FORWARDING_RULES: Lazy<DashMap<String, String>> = Lazy::new(DashMap::new);
 
 pub fn update_dynamic_forwarding_rules(old_model: String, new_model: String) {
     if !DYNAMIC_MODEL_FORWARDING_RULES.contains_key(&old_model) {
@@ -171,7 +171,7 @@ pub async fn get_all_dynamic_models(
     // [NEW] Issue #247: Dynamically generate all Image Gen Combinations
     let base = "gemini-3-pro-image";
     let resolutions = vec!["", "-2k", "-4k"];
-    let ratios = vec!["", "-1x1", "-4x3", "-3x4", "-16x9", "-9x16", "-21x9"];
+    let ratios = ["", "-1x1", "-4x3", "-3x4", "-16x9", "-9x16", "-21x9"];
     
     for res in resolutions {
         for ratio in ratios.iter() {

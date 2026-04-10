@@ -462,7 +462,7 @@ fn rebuild_index_from_accounts_in_dir(data_dir: &PathBuf) -> Result<AccountIndex
         if let Ok(entries) = fs::read_dir(&accounts_dir) {
             for entry in entries.filter_map(|e| e.ok()) {
                 let path = entry.path();
-                if path.extension().map_or(false, |ext| ext == "json") {
+                if path.extension().is_some_and(|ext| ext == "json") {
                     if let Some(account_id) = path.file_stem().and_then(|s| s.to_str()) {
                         match load_account_at_path(&path) {
                             Ok(account) => {
@@ -1436,7 +1436,7 @@ pub fn update_account_quota(account_id: &str, quota: QuotaData) -> Result<(), St
                     && account
                         .proxy_disabled_reason
                         .as_ref()
-                        .map_or(false, |r| r == "quota_protection")
+                        .is_some_and(|r| r == "quota_protection")
                 {
                     crate::modules::logger::log_info(&format!(
                         "[Quota] Migrating account {} from account-level to model-level protection",
@@ -1622,7 +1622,7 @@ pub async fn fetch_quota_with_retry(account: &mut Account) -> crate::error::AppR
 
         // Get display name (incidental to Token refresh)
         let name = if account.name.is_none()
-            || account.name.as_ref().map_or(false, |n| n.trim().is_empty())
+            || account.name.as_ref().is_some_and(|n| n.trim().is_empty())
         {
             match oauth::get_user_info(&token.access_token, Some(&account.id)).await {
                 Ok(user_info) => user_info.get_display_name(),
@@ -1637,7 +1637,7 @@ pub async fn fetch_quota_with_retry(account: &mut Account) -> crate::error::AppR
     }
 
     // 0. Supplement display name (if missing or upper step failed)
-    if account.name.is_none() || account.name.as_ref().map_or(false, |n| n.trim().is_empty()) {
+    if account.name.is_none() || account.name.as_ref().is_some_and(|n| n.trim().is_empty()) {
         modules::logger::log_info(&format!(
             "Account {} missing display name, attempting to fetch...",
             account.email
@@ -1736,7 +1736,7 @@ pub async fn fetch_quota_with_retry(account: &mut Account) -> crate::error::AppR
 
                 // Re-fetch display name
                 let name = if account.name.is_none()
-                    || account.name.as_ref().map_or(false, |n| n.trim().is_empty())
+                    || account.name.as_ref().is_some_and(|n| n.trim().is_empty())
                 {
                     match oauth::get_user_info(&token_res.access_token, Some(&account.id)).await {
                         Ok(user_info) => user_info.get_display_name(),

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::path::PathBuf;
 use uuid::Uuid;
-use chrono::{Utc, Local, Timelike, FixedOffset};
+use chrono::{Utc, Timelike, FixedOffset};
 
 /// 用户令牌结构体
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -585,15 +585,14 @@ pub fn validate_token(token_str: &str, ip: &str, model: Option<&str>) -> Result<
 
         // 4. 检查模型访问限制
         if let Some(model_name) = model {
-            if !token.allowed_models.is_empty() {
-                if !token.allowed_models.contains(&model_name.to_string()) {
+            if !token.allowed_models.is_empty()
+                && !token.allowed_models.contains(&model_name.to_string()) {
                     return Ok((false, Some(format!(
                         "Model '{}' is not allowed for this token. Allowed models: {}",
                         model_name,
                         token.allowed_models.join(", ")
                     ))));
                 }
-            }
         }
 
         // 一切正常，Token 有效

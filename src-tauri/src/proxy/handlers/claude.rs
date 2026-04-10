@@ -664,8 +664,8 @@ pub async fn handle_messages(
             // ===== Layer 1: Tool Message Trimming (L1 threshold) =====
             // Borrowed from Practical-Guide-to-Context-Engineering
             // Advantage: Completely cache-friendly (only removes messages, doesn't modify content)
-            if usage_ratio > threshold_l1 && !compression_applied {
-                if ContextManager::trim_tool_messages(&mut request_with_mapped.messages, 5) {
+            if usage_ratio > threshold_l1 && !compression_applied
+                && ContextManager::trim_tool_messages(&mut request_with_mapped.messages, 5) {
                     info!(
                         "[{}] [Layer-1] Tool trimming triggered (usage: {:.1}%, threshold: {:.1}%)",
                         trace_id, usage_ratio * 100.0, threshold_l1 * 100.0
@@ -693,7 +693,6 @@ pub async fn handle_messages(
                         compression_applied = false; // Allow Layer 2 to run
                     }
                 }
-            }
 
             // ===== Layer 2: Thinking Content Compression (L2 threshold) =====
             // NEW: Preserve signatures while compressing thinking text
