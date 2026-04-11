@@ -12,8 +12,13 @@ RUN if [ "$USE_MIRROR" = "true" ] || ( [ "$USE_MIRROR" = "auto" ] && ! timeout 3
     fi
 
 COPY package*.json ./
+# Fix ETXTBSY error on ARM64 by using fresh install without cache conflicts
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
+    npm ci --legacy-peer-deps --no-audit --no-fund && \
+    # Ensure esbuild binary is properly installed for current platform
+    if [ -d node_modules/esbuild ]; then \
+        node node_modules/esbuild/install.js || true; \
+    fi
 COPY tsconfig.json tsconfig.node.json vite.config.ts tailwind.config.js postcss.config.cjs index.html ./
 COPY public ./public
 COPY src ./src
